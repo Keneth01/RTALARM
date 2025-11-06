@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Alarm System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            transition: background-color 1s ease;
+        }
+        .container {
+            text-align: center;
+        }
+        .input-time {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: none;
+        }
+        .input-label {
+            padding: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: none;
+        }
+        .set-button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .alarms-list {
+            margin-top: 20px;
+            list-style: none;
+            padding: 0;
+        }
+        .alarm-item {
+            background-color: #333;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .alarm-item button {
+            background-color: #FF5722;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .alarm-message {
+            font-size: 24px;
+            margin-top: 20px;
+            display: none;
+        }
+        .active-alarm {
+            background-color: #FF5722;
+        }
+
+        /* Flashing effect */
+        @keyframes flash-red-green {
+            0% { background-color: red; }
+            50% { background-color: green; }
+            100% { background-color: red; }
+        }
+
+        .flashing {
+            animation: flash-red-green 1s infinite;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Set Multiple Alarms</h1>
+    <input type="time" id="alarm-time" class="input-time" placeholder="Set Alarm Time">
+    <input type="text" id="alarm-label" class="input-label" placeholder="Label for Alarm">
+    <button onclick="setAlarm()" class="set-button">Set Alarm</button>
+
+    <ul id="alarms-list" class="alarms-list"></ul>
+
+    <p id="alarm-message" class="alarm-message">Change aux!</p>
+</div>
+
+<script>
+    let alarms = [];
+    let alarmInterval;
+
+    function setAlarm() {
+        const timeInput = document.getElementById("alarm-time").value;
+        const labelInput = document.getElementById("alarm-label").value;
+        
+        if (!timeInput || !labelInput) {
+            alert("Please set a time and label for the alarm.");
+            return;
+        }
+
+        const [hour, minute] = timeInput.split(":");
+        const alarm = {
+            time: { hour: parseInt(hour), minute: parseInt(minute) },
+            label: labelInput
+        };
+        
+        alarms.push(alarm);
+        updateAlarmList();
+        alert(`Alarm set for ${timeInput} with label: ${labelInput}`);
+        
+        // Start checking for alarm time if not already running
+        if (!alarmInterval) {
+            startAlarmCheck();
+        }
+    }
+
+    function updateAlarmList() {
+        const alarmList = document.getElementById("alarms-list");
+        alarmList.innerHTML = ""; // Clear the list before re-rendering
+        
+        alarms.forEach((alarm, index) => {
+            const listItem = document.createElement("li");
+            listItem.className = "alarm-item";
+            listItem.textContent = `${alarm.label} - ${formatTime(alarm.time)}`;
+            
+            // Create the delete button
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "Delete";
+            deleteButton.onclick = function () {
+                deleteAlarm(index);
+            };
+
+            listItem.appendChild(deleteButton);
+            alarmList.appendChild(listItem);
+        });
+    }
+
+    function formatTime(time) {
+        return `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}`;
+    }
+
+    function startAlarmCheck() {
+        alarmInterval = setInterval(() => {
+            const currentTime = new Date();
+            const hours = currentTime.getHours();
+            const minutes = currentTime.getMinutes();
+
+            alarms.forEach((alarm, index) => {
+                if (hours === alarm.time.hour && minutes === alarm.time.minute) {
+                    triggerAlarm(index);
+                }
+            });
+        }, 1000); // Check every second to ensure it triggers in real-time
+    }
+
+    function triggerAlarm(index) {
+        // Add flashing effect to the body
+        document.body.classList.add("flashing");
+
+        // Show the alarm message
+        const alarmMessage = document.getElementById("alarm-message");
+        alarmMessage.textContent = `Change aux! ${alarms[index].label}`; // Change message
+        alarmMessage.style.display = "block";
+
+        // Turn the UI dark mode
+        document.body.style.color = "#fff";
+        document.body.style.backgroundColor = "#121212"; // Dark mode
+
+        // Optionally, mark the alarm as active (changing background color of the list item)
+        const alarmItems = document.querySelectorAll(".alarm-item");
+        alarmItems[index].classList.add("active-alarm");
+    }
+
+    function deleteAlarm(index) {
+        // Remove the alarm from the alarms array
+        alarms.splice(index, 1);
+        
+        // Update the alarm list
+        updateAlarmList();
+        
+        // If there are no more alarms, stop checking and stop the flashing
+        if (alarms.length === 0) {
+            clearInterval(alarmInterval);
+            alarmInterval = null;
+            // Stop flashing if there are no alarms left
+            document.body.classList.remove("flashing");
+            const alarmMessage = document.getElementById("alarm-message");
+            alarmMessage.style.display = "none"; // Hide the alarm message
+        }
+    }
+</script>
+
+</body>
+</html>
