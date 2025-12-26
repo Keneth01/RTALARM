@@ -1,208 +1,174 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Alarm System</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #fff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            transition: background-color 1s ease;
-        }
-        .container {
-            text-align: center;
-        }
-        .input-time {
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 10px;
-            border-radius: 5px;
-            border: none;
-        }
-        .input-label {
-            padding: 10px;
-            font-size: 16px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-            border: none;
-        }
-        .set-button {
-            padding: 10px 20px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        .alarms-list {
-            margin-top: 20px;
-            list-style: none;
-            padding: 0;
-        }
-        .alarm-item {
-            background-color: #333;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .alarm-item button {
-            background-color: #FF5722;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .alarm-message {
-            font-size: 24px;
-            margin-top: 20px;
-            display: none;
-        }
-        .active-alarm {
-            background-color: #FF5722;
-        }
+  <title>Full Screen Alarm Clock</title>
+  <style>
+    body {
+      background-color: #000; /* dark theme */
+      color: #eee;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      padding-top: 50px;
+      transition: background-color 0.5s;
+    }
 
-        /* Flashing effect */
-        @keyframes flash-red-green {
-            0% { background-color: red; }
-            50% { background-color: green; }
-            100% { background-color: red; }
-        }
+    h1, label {
+      font-weight: 300;
+      letter-spacing: 1px;
+    }
 
-        .flashing {
-            animation: flash-red-green 1s infinite;
-        }
-    </style>
+    input[type="time"] {
+      background-color: #111;
+      color: #eee;
+      border: 1px solid #444;
+      padding: 8px;
+      font-size: 16px;
+      border-radius: 4px;
+      outline: none;
+    }
+
+    button {
+      background-color: #111;
+      color: #eee;
+      border: 1px solid #444;
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #222;
+      color: #fff;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+
+    li {
+      margin: 8px 0;
+      font-size: 18px;
+      color: #ccc;
+    }
+
+    .deleteBtn {
+      margin-left: 10px;
+      background-color: #111;
+      border: 1px solid #444;
+      color: #eee;
+      padding: 4px 8px;
+      font-size: 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .deleteBtn:hover {
+      background-color: #222;
+      color: #fff;
+    }
+
+    #alarmDisplay {
+      font-size: 40px;
+      margin-top: 30px;
+      font-weight: bold;
+      color: #fff;
+      position: relative;
+      z-index: 2;
+    }
+
+    #alarmImage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover; /* fill screen */
+      display: none;
+      z-index: 1;
+    }
+  </style>
 </head>
 <body>
+  <h1>Alarm</h1>
+  <label>Choose time:</label>
+  <input type="time" id="alarmInput">
+  <button onclick="addAlarm()">Add Alarm</button>
 
-<div class="container">
-    <h1>Set Multiple Alarms</h1>
-    <input type="time" id="alarm-time" class="input-time" placeholder="Set Alarm Time">
-    <input type="text" id="alarm-label" class="input-label" placeholder="Label for Alarm">
-    <button onclick="setAlarm()" class="set-button">Set Alarm</button>
+  <ul id="alarmList"></ul>
+  <div id="alarmDisplay"></div>
+  <img id="alarmImage" src="" alt="Alarm Image">
 
-    <ul id="alarms-list" class="alarms-list"></ul>
-
-    <p id="alarm-message" class="alarm-message">Change aux!</p>
-</div>
-
-<script>
+  <script>
     let alarms = [];
-    let alarmInterval;
+    let flashInterval;
 
-    function setAlarm() {
-        const timeInput = document.getElementById("alarm-time").value;
-        const labelInput = document.getElementById("alarm-label").value;
-        
-        if (!timeInput || !labelInput) {
-            alert("Please set a time and label for the alarm.");
-            return;
-        }
-
-        const [hour, minute] = timeInput.split(":");
-        const alarm = {
-            time: { hour: parseInt(hour), minute: parseInt(minute) },
-            label: labelInput
-        };
-        
-        alarms.push(alarm);
-        updateAlarmList();
-        alert(`Alarm set for ${timeInput} with label: ${labelInput}`);
-        
-        // Start checking for alarm time if not already running
-        if (!alarmInterval) {
-            startAlarmCheck();
-        }
-    }
-
-    function updateAlarmList() {
-        const alarmList = document.getElementById("alarms-list");
-        alarmList.innerHTML = ""; // Clear the list before re-rendering
-        
-        alarms.forEach((alarm, index) => {
-            const listItem = document.createElement("li");
-            listItem.className = "alarm-item";
-            listItem.textContent = `${alarm.label} - ${formatTime(alarm.time)}`;
-            
-            // Create the delete button
-            const deleteButton = document.createElement("button");
-            deleteButton.textContent = "Delete";
-            deleteButton.onclick = function () {
-                deleteAlarm(index);
-            };
-
-            listItem.appendChild(deleteButton);
-            alarmList.appendChild(listItem);
-        });
-    }
-
-    function formatTime(time) {
-        return `${time.hour.toString().padStart(2, '0')}:${time.minute.toString().padStart(2, '0')}`;
-    }
-
-    function startAlarmCheck() {
-        alarmInterval = setInterval(() => {
-            const currentTime = new Date();
-            const hours = currentTime.getHours();
-            const minutes = currentTime.getMinutes();
-
-            alarms.forEach((alarm, index) => {
-                if (hours === alarm.time.hour && minutes === alarm.time.minute) {
-                    triggerAlarm(index);
-                }
-            });
-        }, 1000); // Check every second to ensure it triggers in real-time
-    }
-
-    function triggerAlarm(index) {
-        // Add flashing effect to the body
-        document.body.classList.add("flashing");
-
-        // Show the alarm message
-        const alarmMessage = document.getElementById("alarm-message");
-        alarmMessage.textContent = `Change aux! ${alarms[index].label}`; // Change message
-        alarmMessage.style.display = "block";
-
-        // Turn the UI dark mode
-        document.body.style.color = "#fff";
-        document.body.style.backgroundColor = "#121212"; // Dark mode
-
-        // Optionally, mark the alarm as active (changing background color of the list item)
-        const alarmItems = document.querySelectorAll(".alarm-item");
-        alarmItems[index].classList.add("active-alarm");
+    function addAlarm() {
+      const alarmTime = document.getElementById("alarmInput").value;
+      if (alarmTime) {
+        alarms.push(alarmTime);
+        renderAlarms();
+      }
     }
 
     function deleteAlarm(index) {
-        // Remove the alarm from the alarms array
-        alarms.splice(index, 1);
-        
-        // Update the alarm list
-        updateAlarmList();
-        
-        // If there are no more alarms, stop checking and stop the flashing
-        if (alarms.length === 0) {
-            clearInterval(alarmInterval);
-            alarmInterval = null;
-            // Stop flashing if there are no alarms left
-            document.body.classList.remove("flashing");
-            const alarmMessage = document.getElementById("alarm-message");
-            alarmMessage.style.display = "none"; // Hide the alarm message
-        }
+      alarms.splice(index, 1);
+      renderAlarms();
     }
-</script>
 
+    function renderAlarms() {
+      const list = document.getElementById("alarmList");
+      list.innerHTML = "";
+      alarms.forEach((time, index) => {
+        const li = document.createElement("li");
+        li.textContent = time;
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.className = "deleteBtn";
+        delBtn.onclick = () => deleteAlarm(index);
+        li.appendChild(delBtn);
+        list.appendChild(li);
+      });
+    }
+
+    function checkAlarms() {
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0,5); // HH:MM
+      if (alarms.includes(currentTime)) {
+        startFlashing(currentTime);
+        alarms = alarms.filter(a => a !== currentTime);
+        renderAlarms();
+      }
+    }
+
+    function startFlashing(timeText) {
+      let isImage1 = true;
+      let elapsed = 0;
+      const alarmDisplay = document.getElementById("alarmDisplay");
+      const alarmImage = document.getElementById("alarmImage");
+
+      alarmDisplay.textContent = timeText;
+      alarmImage.style.display = "block";
+
+      flashInterval = setInterval(() => {
+        alarmImage.src = isImage1 
+          ? "https://kupal.vercel.app/assets/bini-malupiton-DCnYQiMn.jpg" 
+          : "https://i.ytimg.com/vi/yw1-pnmw5Jk/hq720.jpg?sqp=-oaymwEhCK4FEIIDSFryq4qpAxMIARUAAAAAGAElAADIQj0AgKJD&rs=AOn4CLAp1ZCg5Svc-mt2pYuhMBfKcdC11w";
+        isImage1 = !isImage1;
+        elapsed += 500;
+
+        if (elapsed >= 20000) { // stop after 20s
+          clearInterval(flashInterval);
+          alarmImage.style.display = "none";
+          alarmDisplay.textContent = "";
+          alert("Alarm finished!");
+        }
+      }, 500);
+    }
+
+    setInterval(checkAlarms, 1000);
+  </script>
 </body>
 </html>
